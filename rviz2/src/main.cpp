@@ -28,23 +28,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <QApplication>  // NOLINT: cpplint is unable to handle the include order here
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <QApplication>  // NOLINT: cpplint is unable to handle the include order here
 
 #include "rclcpp/rclcpp.hpp"
 #include "rviz_common/logging.hpp"
 #include "rviz_common/ros_integration/ros_client_abstraction.hpp"
 #include "rviz_common/visualizer_app.hpp"
 
-int main(int argc, char ** argv)
-{
+int main(int argc, char **argv) {
   // remove ROS arguments before passing to QApplication
-  std::vector<std::string> non_ros_args = rclcpp::remove_ros_arguments(argc, argv);
+  std::vector<std::string> non_ros_args =
+      rclcpp::remove_ros_arguments(argc, argv);
   std::vector<char *> non_ros_args_c_strings;
-  for (auto & arg : non_ros_args) {
+  for (auto &arg : non_ros_args) {
     non_ros_args_c_strings.push_back(&arg.front());
   }
   int non_ros_argc = static_cast<int>(non_ros_args_c_strings.size());
@@ -55,22 +54,21 @@ int main(int argc, char ** argv)
   auto logger = rclcpp::get_logger("rviz2");
   // install logging handlers to route logging through ROS's logging system
   rviz_common::set_logging_handlers(
-    [logger](const std::string & msg, const std::string &, size_t) {
-      RCLCPP_DEBUG(logger, msg.c_str());
-    },
-    [logger](const std::string & msg, const std::string &, size_t) {
-      RCLCPP_INFO(logger, msg.c_str());
-    },
-    [logger](const std::string & msg, const std::string &, size_t) {
-      RCLCPP_WARN(logger, msg.c_str());
-    },
-    [logger](const std::string & msg, const std::string &, size_t) {
-      RCLCPP_ERROR(logger, msg.c_str());
-    }
-  );
+      [logger](const std::string &msg, const std::string &, size_t) {
+        RCLCPP_DEBUG(logger, msg.c_str());
+      },
+      [logger](const std::string &msg, const std::string &, size_t) {
+        RCLCPP_INFO(logger, msg.c_str());
+      },
+      [logger](const std::string &msg, const std::string &, size_t) {
+        RCLCPP_WARN(logger, msg.c_str());
+      },
+      [logger](const std::string &msg, const std::string &, size_t) {
+        RCLCPP_ERROR(logger, msg.c_str());
+      });
 
   rviz_common::VisualizerApp vapp(
-    std::make_unique<rviz_common::ros_integration::RosClientAbstraction>());
+      std::make_unique<rviz_common::ros_integration::RosClientAbstraction>());
   vapp.setApp(&qapp);
   if (vapp.init(argc, argv)) {
     return qapp.exec();

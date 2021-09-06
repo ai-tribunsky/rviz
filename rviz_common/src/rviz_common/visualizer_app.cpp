@@ -39,16 +39,15 @@
 // #include <OgreMaterialManager.h>
 
 #include <QApplication>  // NOLINT: cpplint is unable to handle the include order here
-#include <QCommandLineParser>  // NOLINT: cpplint is unable to handle the include order here
 #include <QCommandLineOption>  // NOLINT: cpplint is unable to handle the include order here
+#include <QCommandLineParser>  // NOLINT: cpplint is unable to handle the include order here
 #include <QTimer>  // NOLINT: cpplint is unable to handle the include order here
 
+#include "./visualization_frame.hpp"
 #include "rviz_common/interaction/selection_manager.hpp"
 #include "rviz_common/logging.hpp"
-#include "rviz_rendering/ogre_logging.hpp"
-
-#include "./visualization_frame.hpp"
 #include "rviz_common/visualization_manager.hpp"
+#include "rviz_rendering/ogre_logging.hpp"
 
 // TODO(wjwwood): figure out a non-depricated way to do this
 #if 0
@@ -65,8 +64,7 @@
 // #include "rviz/ogre_helpers/render_system.h"
 // #include "rviz/wait_for_master_dialog.h"
 
-namespace rviz_common
-{
+namespace rviz_common {
 
 // TODO(wjwwood): reenable the service to reload the shaders
 // bool
@@ -103,31 +101,25 @@ namespace rviz_common
 // }
 
 VisualizerApp::VisualizerApp(
-  std::unique_ptr<rviz_common::ros_integration::RosClientAbstractionIface> ros_client_abstraction)
-: app_(0),
-  continue_timer_(0),
-  frame_(0),
-  node_(),
-  ros_client_abstraction_(std::move(ros_client_abstraction))
-{}
+    std::unique_ptr<rviz_common::ros_integration::RosClientAbstractionIface>
+        ros_client_abstraction)
+    : app_(0),
+      continue_timer_(0),
+      frame_(0),
+      node_(),
+      ros_client_abstraction_(std::move(ros_client_abstraction)) {}
 
-void VisualizerApp::setApp(QApplication * app)
-{
-  app_ = app;
-}
+void VisualizerApp::setApp(QApplication* app) { app_ = app; }
 
-rviz_rendering::RenderWindow * VisualizerApp::getRenderWindow()
-{
+rviz_rendering::RenderWindow* VisualizerApp::getRenderWindow() {
   return frame_->getRenderWindow();
 }
 
-void VisualizerApp::loadConfig(QString config_path)
-{
+void VisualizerApp::loadConfig(QString config_path) {
   frame_->loadDisplayConfig(config_path);
 }
 
-bool VisualizerApp::init(int argc, char ** argv)
-{
+bool VisualizerApp::init(int argc, char** argv) {
   // TODO(wjwwood): find a way to get the versions and print them here
   //                also include versions of more things, like rviz_rendering,
   //                rviz_common, and the plugins
@@ -157,138 +149,65 @@ bool VisualizerApp::init(int argc, char ** argv)
   parser.addHelpOption();
 
   QCommandLineOption display_config_option(
-    QStringList() << "d" << "display-config",
-      "A display config file (.rviz) to load",
-      "display_config");
+      QStringList() << "d"
+                    << "display-config",
+      "A display config file (.rviz) to load", "display_config");
   parser.addOption(display_config_option);
 
-  QCommandLineOption fixed_frame_option(
-    QStringList() << "f" << "fixed-frame", "Set the fixed frame", "fixed_frame");
+  QCommandLineOption fixed_frame_option(QStringList() << "f"
+                                                      << "fixed-frame",
+                                        "Set the fixed frame", "fixed_frame");
   parser.addOption(fixed_frame_option);
 
   QCommandLineOption ogre_log_option(
-    QStringList() << "l" << "ogre-log",
+      QStringList() << "l"
+                    << "ogre-log",
       "Enable the Ogre.log file (output in cwd) and console output.");
   parser.addOption(ogre_log_option);
 
   QCommandLineOption splash_screen_option(
-    QStringList() << "s" << "splash-screen",
+      QStringList() << "s"
+                    << "splash-screen",
       "A custom splash-screen image to display", "splash_path");
   parser.addOption(splash_screen_option);
 
-// TODO(botteroa-si): enable when possible
-//  QCommandLineOption help_file_option(
-//    "help-file", "A custom html file to show as the help screen", "help_path");
-//  parser.addOption(help_file_option);
-//
-//  QCommandLineOption open_gl_option(
-//    "opengl",
-//    "Force OpenGL version (use '--opengl 210' for OpenGL 2.1 compatibility mode)",
-//    "version");
-//  parser.addOption(open_gl_option);
-//
-//  QCommandLineOption disable_anti_aliasing_option(
-//    "disable-anti-aliasing", "Prevent rviz from trying to use anti-aliasing when rendering.");
-//  parser.addOption(disable_anti_aliasing_option);
-//
-//  QCommandLineOption no_stereo_option("no-stereo", "Disable the use of stereo rendering.");
-//  parser.addOption(no_stereo_option);
-//
-//  QCommandLineOption log_level_debug_option(
-//    "log-level-debug", "Sets the ROS logger level to debug.");
-//  parser.addOption(log_level_debug_option);
-
-//   ("in-mc-wrapper", "Signal that this is running inside a master-chooser wrapper")
+  QCommandLineOption window_mode_option(
+      QStringList() << "m"
+                    << "window-mode",
+      "Window mode: regular, fullscreen, headless", "window-mode", "regular");
+  parser.addOption(window_mode_option);
 
   QString display_config, fixed_frame, splash_path, help_path;
-  bool enable_ogre_log;
-  // TODO(botteroa-si): enable when possible
-//  bool in_mc_wrapper = false;
-//  int force_gl_version = 0;
-//  bool disable_anti_aliasing = false;
-//  bool disable_stereo = false;
-
+  QString window_mode, window_style;
   parser.process(*app_);
-
-  enable_ogre_log = parser.isSet(ogre_log_option);
-//    disable_stereo = parser.isSet(no_stereo_option);
-//    disable_anti_aliasing = parser.isSet(disable_anti_aliasing_option);
-
   if (parser.isSet(display_config_option)) {
     display_config = parser.value(display_config_option);
   }
   if (parser.isSet(fixed_frame_option)) {
     fixed_frame = parser.value(fixed_frame_option);
   }
-
   if (parser.isSet(splash_screen_option)) {
     splash_path = parser.value(splash_screen_option);
   }
-// TODO(botteroa-si): enable when possible
-//    if (parser.isSet(help_file_option)) {
-//      help_path = parser.value(help_file_option);
-//    }
-//    if (parser.isSet(open_gl_option)) {
-//      force_gl_version = parser.value(open_gl_option).toInt();
-//    }
+  if (parser.isSet(window_mode_option)) {
+    window_mode = parser.value(window_mode_option);
+  }
 
-//   if (vm.count("in-mc-wrapper")) {
-//     in_mc_wrapper = true;
-//   }
-//
-//
-//   if (vm.count("log-level-debug")) {
-//     if (
-//       ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
-//     {
-//       ros::console::notifyLoggerLevelsChanged();
-//     }
-//   }
-
-  //
-  // if (!ros::master::check() ) {
-  // TODO(wjwwood): figure out how to support the "wait for master" functionality
-  //                while also using the rviz_common/ros_integration abstraction
-  //   WaitForMasterDialog * dialog = new WaitForMasterDialog;
-  //   if (dialog->exec() != QDialog::Accepted) {
-  //     return false;
-  //   }
-  // }
-  //
-  // nh_.reset(new ros::NodeHandle);
-  //
+  bool enable_ogre_log = parser.isSet(ogre_log_option);
   if (enable_ogre_log) {
     rviz_rendering::OgreLogging::useLogFileAndStandardOut();
   }
-  //
-  // if (force_gl_version) {
-  //   RenderSystem::forceGlVersion(force_gl_version);
-  // }
-  //
-  // if (disable_anti_aliasing) {
-  //   RenderSystem::disableAntiAliasing();
-  // }
-  //
-  // if (disable_stereo) {
-  //   RenderSystem::forceNoStereo();
-  // }
 
-  startContinueChecker();
-
-  // TODO(wjwwood): anonymous is not working right now, reenable later
-  // node_name_ = rviz_common::ros_integration::init(argc, argv, "rviz", true /* anonymous_name */);
-  node_ = ros_client_abstraction_->init(argc, argv, "rviz", false /* anonymous_name */);
+  node_ = ros_client_abstraction_->init(argc, argv, "rviz", false);
 
   frame_ = new VisualizationFrame(node_);
   frame_->setApp(this->app_);
-
   if (!help_path.isEmpty()) {
     frame_->setHelpPath(help_path);
   }
-
-  // TODO(wjwwood): figure out how to preserve the "choost new master" feature
-  // frame_->setShowChooseNewMaster(in_mc_wrapper);
-
+  if (!window_mode.isEmpty()) {
+    frame_->setWindowMode(window_mode);
+  }
   if (!splash_path.isEmpty()) {
     frame_->setSplashPath(splash_path);
   }
@@ -300,29 +219,22 @@ bool VisualizerApp::init(int argc, char ** argv)
 
   frame_->show();
 
-  // TODO(wjwwood): reenable the ROS service to reload the shaders via the ros_integration API
-  // ros::NodeHandle private_nh("~");
-  // reload_shaders_service_ = private_nh.advertiseService("reload_shaders", reloadShaders);
-
   return true;
 }
 
-VisualizerApp::~VisualizerApp()
-{
+VisualizerApp::~VisualizerApp() {
   delete continue_timer_;
   ros_client_abstraction_->shutdown();
   delete frame_;
 }
 
-void VisualizerApp::startContinueChecker()
-{
+void VisualizerApp::startContinueChecker() {
   continue_timer_ = new QTimer(this);
   connect(continue_timer_, SIGNAL(timeout()), this, SLOT(checkContinue()));
   continue_timer_->start(100);
 }
 
-void VisualizerApp::checkContinue()
-{
+void VisualizerApp::checkContinue() {
   if (!ros_client_abstraction_->ok()) {
     if (frame_) {
       // Make sure the window doesn't ask if we want to save first.

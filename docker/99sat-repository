@@ -1,0 +1,4 @@
+Package: *
+Pin: origin "mirror.sberautotech.ru"
+Pin: release o=sat-3rdparty focal,a=focal,n=focal,l=sat-3rdparty focal,c=main,b=amd64
+Pin-Priority: 1001
